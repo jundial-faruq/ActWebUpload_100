@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Upload</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface2: #242424;
+            --border: #2e2e2e;
+            --accent: #f0e040;
+            --accent2: #40e0b0;
+            --danger: #ff5555;
+            --text: #e8e8e8;
+            --text-muted: #888;
+            --radius: 10px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* Background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(240,224,64,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(240,224,64,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            margin-bottom: 40px;
+            border-left: 4px solid var(--accent);
+            padding-left: 16px;
+        }
+
+        header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2rem;
+            color: var(--accent);
+            letter-spacing: -1px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-size: 0.9rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--surface2);
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(240,224,64,0.04);
+        }
+
+        .drop-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .drop-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .drop-zone strong {
+            color: var(--accent);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Preview area */
+        #previewArea {
+            display: none;
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--surface2);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+
+        #previewArea img {
+            max-width: 100%;
+            max-height: 260px;
+            border-radius: 6px;
+            display: block;
+            margin: 0 auto 12px;
+            object-fit: contain;
+        }
+
+        .file-meta {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .file-meta span { color: var(--text); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #111;
+        }
+
+        .btn-primary:hover { background: #fff; }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(255,85,85,0.3);
+            padding: 7px 14px;
+            font-size: 0.82rem;
+        }
+
+        .btn-danger:hover {
+            background: rgba(255,85,85,0.1);
+            border-color: var(--danger);
+        }
+
+        .btn-download {
+            background: transparent;
+            color: var(--accent2);
+            border: 1px solid rgba(64,224,176,0.3);
+            padding: 7px 14px;
+            font-size: 0.82rem;
+        }
+
+        .btn-download:hover {
+            background: rgba(64,224,176,0.1);
+            border-color: var(--accent2);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            margin-bottom: 16px;
+            border-left: 3px solid;
+        }
+
+        .alert-success {
+            background: rgba(64,224,176,0.08);
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .alert-error {
+            background: rgba(255,85,85,0.08);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* File List */
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: border-color 0.15s;
+        }
+
+        .file-item:hover { border-color: var(--accent); }
+
+        .file-thumb {
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--border);
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-info .name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.92rem;
+        }
+
+        .file-info .size {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-family: 'Space Mono', monospace;
+            margin-top: 3px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state .icon { font-size: 2rem; margin-bottom: 8px; }
+
+        /* Loading spinner */
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Progress bar */
+        .progress-wrap {
+            height: 4px;
+            background: var(--border);
+            border-radius: 99px;
+            margin-top: 14px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 99px;
+            transition: width 0.3s ease;
+        }
+
+        /* Fade in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card { animation: fadeIn 0.3s ease both; }
+        .card:nth-child(2) { animation-delay: 0.05s; }
+        .card:nth-child(3) { animation-delay: 0.1s; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>Web Upload</h1>
+        <p>Upload, preview, unduh, dan hapus gambar</p>
+    </header>
+
+    <!-- CARD UPLOAD -->
+    <div class="card">
+        <div class="card-title">01 — Unggah File</div>
+
+        <div id="alertBox"></div>
+
+        <!-- Drop Zone -->
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <span class="drop-icon">📂</span>
+            <p>Klik atau <strong>drag & drop</strong> gambar ke sini</p>
+            <p style="margin-top:6px; font-size:0.8rem;">JPG, JPEG, PNG, GIF — maks. 500 KB</p>
+        </div>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif">
+
+        <!-- Preview sebelum upload -->
+        <div id="previewArea">
+            <img id="previewImg" src="" alt="Preview">
+            <div class="file-meta">
+                <div>Nama: <span id="previewName">—</span></div>
+                <div>Ukuran: <span id="previewSize">—</span></div>
+                <div>Tipe: <span id="previewType">—</span></div>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-wrap" id="progressWrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="uploadFile()" id="btnUpload">
+                <span>⬆</span> Unggah
+                <div class="spinner" id="spinner"></div>
+            </button>
+            <button class="btn btn-secondary" onclick="clearPreview()">✕ Batal</button>
+        </div>
+    </div>
+
+    <!-- CARD DAFTAR FILE -->
+    <div class="card">
+        <div class="card-title">02 — File Tersimpan</div>
+        <div class="file-list" id="fileList">
+            <div class="empty-state">
+                <div class="icon">🗂️</div>
+                Memuat daftar file...
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    // Drag & Drop
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file) showPreview(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) showPreview(fileInput.files[0]);
+    });
+
+    // Preview sebelum upload
+    function showPreview(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('previewName').textContent = file.name;
+            document.getElementById('previewSize').textContent = formatSize(file.size);
+            document.getElementById('previewType').textContent = file.type || '—';
+            document.getElementById('previewArea').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearPreview() {
+        document.getElementById('previewArea').style.display = 'none';
+        document.getElementById('previewImg').src = '';
+        fileInput.value = '';
+    }
+
+    // Upload via AJAX
+    function uploadFile() {
+        const file = fileInput.files[0];
+        if (!file) { showAlert('Pilih file terlebih dahulu.', 'error'); return; }
+
+        const formData = new FormData();
+        formData.append('fileToUpload', file);
+        formData.append('submit', '1');
+
+        const progressWrap = document.getElementById('progressWrap');
+        const progressBar  = document.getElementById('progressBar');
+        const spinner      = document.getElementById('spinner');
+        const btnUpload    = document.getElementById('btnUpload');
+
+        progressWrap.style.display = 'block';
+        spinner.style.display = 'block';
+        btnUpload.disabled = true;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'upload.php', true);
+
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable) {
+                progressBar.style.width = (e.loaded / e.total * 100) + '%';
+            }
+        };
+
+        xhr.onload = () => {
+            spinner.style.display = 'none';
+            btnUpload.disabled = false;
+            const res = xhr.responseText.trim();
+
+            if (xhr.status === 200 && res.startsWith('OK:')) {
+                showAlert('✓ ' + res.slice(3), 'success');
+                clearPreview();
+                progressBar.style.width = '0';
+                progressWrap.style.display = 'none';
+                loadFileList();
+            } else {
+                showAlert('✗ ' + res, 'error');
+                progressWrap.style.display = 'none';
+            }
+        };
+
+        xhr.onerror = () => {
+            spinner.style.display = 'none';
+            btnUpload.disabled = false;
+            showAlert('✗ Gagal terhubung ke server.', 'error');
+            progressWrap.style.display = 'none';
+        };
+
+        xhr.send(formData);
+    }
+
+    // Load file list via AJAX
+    function loadFileList() {
+        fetch('list.php')
+            .then(r => r.json())
+            .then(files => renderFileList(files))
+            .catch(() => {
+                document.getElementById('fileList').innerHTML =
+                    '<div class="empty-state"><div class="icon">⚠️</div>Gagal memuat daftar file. Pastikan list.php ada.</div>';
+            });
+    }
+
+    function renderFileList(files) {
+        const container = document.getElementById('fileList');
+        if (!files.length) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">🗂️</div>Belum ada file yang diunggah.</div>';
+            return;
+        }
+        container.innerHTML = files.map(f => `
+            <div class="file-item" id="item-${CSS.escape(f.name)}">
+                <img class="file-thumb" src="uploads/${encodeURIComponent(f.name)}" alt="${f.name}" onerror="this.style.display='none'">
+                <div class="file-info">
+                    <div class="name" title="${f.name}">${f.name}</div>
+                    <div class="size">${formatSize(f.size)}</div>
+                </div>
+                <div class="file-actions">
+                    <a class="btn btn-download" href="uploads/${encodeURIComponent(f.name)}" download="${f.name}">⬇ Unduh</a>
+                    <button class="btn btn-danger" onclick="deleteFile('${f.name.replace(/'/g,"\\'")}')">🗑 Hapus</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Delete file
+    function deleteFile(name) {
+        if (!confirm('Hapus file "' + name + '"?')) return;
+
+        const formData = new FormData();
+        formData.append('filename', name);
+
+        fetch('delete.php', { method: 'POST', body: formData })
+            .then(r => r.text())
+            .then(res => {
+                if (res.trim().startsWith('OK:')) {
+                    showAlert('✓ ' + res.trim().slice(3), 'success');
+                    loadFileList();
+                } else {
+                    showAlert('✗ ' + res.trim(), 'error');
+                }
+            })
+            .catch(() => showAlert('✗ Gagal menghapus file.', 'error'));
+    }
+
+    // Helpers
+    function showAlert(msg, type) {
+        const box = document.getElementById('alertBox');
+        box.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+        setTimeout(() => box.innerHTML = '', 4000);
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    // Init
+    loadFileList();
+</script>
+</body>
+</html>
